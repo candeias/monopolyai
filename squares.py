@@ -75,6 +75,10 @@ class Buyable(Square):
         """Set the owner."""
         self.owner = player
 
+    def remove_owner(self):
+        """We remove the owner of the property."""
+        self.owner = None
+
     def is_owner(self, player):
         """Is the square owned by the player."""
         return self.owner == player
@@ -157,6 +161,12 @@ class Property(Buyable):
         self.mortgage = mortgage
         self.building_costs = building_costs
 
+    def remove_owner(self):
+        """We remove the owner of the property."""
+        self.owner = None
+        self.house_count = 0
+        self.hotel_count = 0
+
     def compute_rent(self, *args, **kwargs):
         """Return the rent price."""
         return self.rent[self.house_count]
@@ -176,7 +186,10 @@ class Property(Buyable):
 
     def buy_house(self):
         """Buy a house in this property."""
+        # make sure we can buy more houses
         self.house_count += 1
+        if self.house_count >= len(self.rent):
+            raise Exception("You can't buy more houses")
 
     def __repr__(self):
         if self.owner:
@@ -191,15 +204,21 @@ class PropertyGroup:
     """A grouping of properties."""
 
     name = ""
-    property_list = []
 
     def __init__(self, name):
         """Init a property list."""
         self.name = name
+        self.property_list = []
 
     def add_property(self, property):
         """Add a property to the group."""
         self.property_list.append(property)
+
+    def __repr__(self):
+        """Print the group."""
+        return "PropetyGroup ('{0}'): {1}".format(
+            self.name, "|".join(map(lambda x: "{0}".format(x), self.property_list))
+        )
 
 
 class Utility(Buyable):
@@ -224,6 +243,12 @@ class Utility(Buyable):
         for square in self.owner.property_list:
             if issubclass(square.__class__, Utility):
                 utility_count += 1
+
+        print(kwargs["thr"], self.multiplier, utility_count)
+
+        # TODO: Utilities are group... right? So it is needed to code each  group in a differnt way
+        # for now we just max at index 1 and it shoud work
+        utility_count = min([1, utility_count])
 
         return kwargs["thr"].get_amount() * self.multiplier[utility_count]
 

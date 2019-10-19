@@ -65,6 +65,7 @@ class Player(GeneralPlayer):
         """The player will become bankrupt."""
         # move all remaining value to the player
         board.transaction_to_player(self, self.cash, player)
+        self.property_list = []
 
     def get_cash(self):
         """Return the amount of cash the user has."""

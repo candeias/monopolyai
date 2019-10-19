@@ -17,6 +17,12 @@ class Game:
                 if max_turns < 0:
                     max_turns = None
 
+        # print the winner
+        print("--------")
+        print("Winner")
+        print(self.board.get_winner())
+        print("--------")
+
     def export_state(self):
         """Export the state of the game."""
 

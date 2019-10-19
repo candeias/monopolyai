@@ -34,6 +34,7 @@ class Board(BoardConfig):
         shuffle(self.chance_cards)
 
         self.player_positions = [0] * player_count
+        self.player_status = [True] * player_count
         self.current_player = randint(0, player_count - 1)
         self.player_list = []
         for i in range(player_count):
@@ -41,6 +42,9 @@ class Board(BoardConfig):
                 Player(uid=i, token=self.token[i], strategy=strategy[i])
             )
         self.full_turn_count = 1
+
+        print(self.groups)
+        print(me)
 
     def compute_new_position_from_dice(self, player_index, thr):
         """Compute the new position on the board."""
@@ -89,12 +93,21 @@ class Board(BoardConfig):
 
                 self.player_observable_variables()
 
-        # move turn to next player
+        # move turn to next player until we either find a player that
+        # is still in the game, or we find the end of the list
         self.current_player += 1
+        while (
+            self.current_player < len(self.player_list)
+            and not self.player_status[self.current_player]
+        ):
+            self.current_player += 1
+
+        # we either found a working player or we have reached the end of the list
         if self.current_player >= len(self.player_list):
             self.current_player = 0
             self.full_turn_count += 1
             print("**********************")
+            print(self.player_status)
             print(
                 "Full turn:",
                 self.full_turn_count,
@@ -306,14 +319,19 @@ class Board(BoardConfig):
         print("REMOVING", player)
         player_index = self.get_player_index(player)
 
-        # if we are the current player, move back the index once
-        if self.current_player == player_index:
-            self.current_player -= 1
-            if self.current_player < 0:
-                self.current_player = len(self.player_list) - 2
+        # # if we are the current player, move back the index once
+        # if self.current_player == player_index:
+        #     self.current_player -= 1
+        #     if self.current_player < 0:
+        #         self.current_player = len(self.player_list) - 2
 
-        self.player_positions.pop(player_index)
-        self.player_list.pop(player_index)
+        # we remove the player by setting a flag
+        self.player_status[player_index] = False
+
+        # remove all of the player's properties
+        for i in range(len(self.squares)):
+            if self.squares[i].get_owner() == player:
+                self.squares[i].remove_owner()
 
         # TODO: put any cards owned by the player back in to the cards list
 
@@ -384,4 +402,16 @@ class Board(BoardConfig):
         self.community_cards.append(card)
 
     def game_running(self):
-        return len(self.player_list) > 1
+        """If there is only 1 player remaining we stop."""
+        count = 0
+        for i in range(len(self.player_status)):
+            if self.player_status[i]:
+                count += 1
+        return count > 1
+
+    def get_winner(self):
+        """Return the winner."""
+        for i in range(len(self.player_status)):
+            if self.player_status[i]:
+                return self.player_list[i]
+
